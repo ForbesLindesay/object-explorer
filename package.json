@@ -1,6 +1,6 @@
 {
   "name": "object-explorer",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A browser module to create an extensible gui to explore objects",
   "keywords": [],
   "dependencies": {
