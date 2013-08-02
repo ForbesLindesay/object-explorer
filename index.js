@@ -3,7 +3,7 @@
 var util = require('util')
 var insertCSS = require('insert-css')
 
-insertCSS('.object-explorer {background: white;padding: 1em;}.object-explorer .indent {padding-left: 1em;}' +
+insertCSS('.object-explorer {background: white;padding: 1em;white-space: nowrap;overflow: auto;}.object-explorer .indent {padding-left: 1em;}' +
           '.object-explorer .property-left {min-width: 10em;display: inline-block;}' + 
           '.object-explorer .expand-button {padding: 0.1em;margin: 0;font-size: 1em; height: auto;width: auto;background: none;border: none;color: black;}' +
           '.object-explorer .expand-button:hover {background: none;color: gray;}' +

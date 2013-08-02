@@ -1,6 +1,8 @@
 .object-explorer {
   background: white;
   padding: 1em;
+  white-space: nowrap;
+  overflow: auto;
 }
 .object-explorer .indent {
   padding-left: 1em;
