@@ -43,6 +43,12 @@ Explorer.prototype.getNode = function getNode(obj) {
   if (obj === true || obj === false || obj === null || obj === undefined) {
     return span('atom', util.inspect(obj))
   }
+  if (Object.prototype.toString.call(obj) === '[object Date]') {
+    return span('atom', obj.toISOString())
+  }
+  if (Object.prototype.toString.call(obj) === '[object RegExp]') {
+    return span('atom', obj.toString())
+  }
   if (Array.isArray(obj)) {
     return this.getNodeForArray(obj)
   }
