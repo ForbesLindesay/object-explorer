@@ -20,6 +20,7 @@
   background: none;
   border: none;
   color: black;
+  outline: none;
 }
 .object-explorer .expand-button:hover {
   background: none;
