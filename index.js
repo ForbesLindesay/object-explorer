@@ -10,16 +10,34 @@ insertCSS('.object-explorer {background: white;padding: 1em;white-space: nowrap;
           '.object-explorer .property {color: #2AA198;}.object-explorer .number {color: #D33682;}.object-explorer .string {color: #859900;}.object-explorer .atom {color: #D33682;}')
 
 module.exports = Explorer
-function Explorer(object) {
+
+function ExpandState() {
+  
+}
+ExpandState.prototype.expand = function (name) {
+  this['key:' + name.join('.')] = true
+}
+ExpandState.prototype.contract = function (name) {
+  this['key:' + name.join('.')] = false
+}
+ExpandState.prototype.isExpanded = function (name) {
+  return this['key:' + name.join('.')]
+}
+
+function Explorer(object, expandState) {
   this.object = object
+  this.state = (expandState && expandState.state) || expandState || new ExpandState()
 }
 Explorer.prototype.appendTo = function (parent) {
   var container = document.createElement('div')
   container.setAttribute('class', 'object-explorer')
-  container.appendChild(this.getNode(this.object, 0))
+  container.appendChild(this.getNode(this.object, []))
   return parent.appendChild(container)
 }
-Explorer.prototype.isInline = function isInline(obj, depth) {
+Explorer.prototype.isExpanded = function (path) {
+  return this.state.isExpanded(path)
+}
+Explorer.prototype.isInline = function isInline(obj, path) {
   if (typeof obj === 'string' || typeof obj === 'number') {
     return true
   }
@@ -36,7 +54,7 @@ Explorer.prototype.isInline = function isInline(obj, depth) {
 
   return false
 }
-Explorer.prototype.getNode = function getNode(obj, depth) {
+Explorer.prototype.getNode = function getNode(obj, path) {
   if (typeof obj === 'string' || typeof obj === 'number') {
     return span(typeof obj, util.inspect(obj))
   }
@@ -50,14 +68,14 @@ Explorer.prototype.getNode = function getNode(obj, depth) {
     return span('atom', obj.toString())
   }
   if (Array.isArray(obj)) {
-    return this.getNodeForArray(obj, depth)
+    return this.getNodeForArray(obj, path)
   }
   if (typeof obj === 'object') {
-    return this.getNodeForObject(obj, depth)
+    return this.getNodeForObject(obj, path)
   }
 }
 
-Explorer.prototype.getExpandButton = function getExpandable(obj, depth) {
+Explorer.prototype.getExpandButton = function getExpandable(obj, path) {
   var contractedText = Array.isArray(obj) ? '[+]' : typeof obj === 'object' ? '{+}' : '(+)'
   var expandedText = Array.isArray(obj) ? '[-]' : typeof obj === 'object' ? '{-}' : '(-)'
   var isExpanded = false
@@ -68,24 +86,28 @@ Explorer.prototype.getExpandButton = function getExpandable(obj, depth) {
   function on(name, handler) {
     handlers[name] = handler
   }
-  expand.addEventListener('click', function () {
+  var state = this.state
+  expand.addEventListener('click', onClick, false)
+  function onClick() {
     isExpanded = !isExpanded
     expand.textContent = isExpanded ? expandedText : contractedText
     if (isExpanded) {
       handlers['expanded']()
+      state.expand(path)
     } else {
       handlers['contracted']()
+      state.contract(path)
     }
-  }, false)
-  return {node: expand, on: on}
+  }
+  return {node: expand, on: on, toggle: onClick}
 }
 Explorer.prototype.getContractedNode = Explorer.prototype.getNode
 
-Explorer.prototype.getNodeForArray = function getNodeForArray(arr, depth) {
+Explorer.prototype.getNodeForArray = function getNodeForArray(arr, path) {
   if (arr.length === 0) return document.createTextNode('[]')
   var self = this
 
-  arr = arr.map(function (node) { return self.getContractedNode(node, depth + 1) })
+  arr = arr.map(function (node, i) { return self.getContractedNode(node, path.concat(i.toString())) })
   var outer = document.createElement('div')
   outer.appendChild(document.createTextNode('['))
   arr.forEach(function (node) {
@@ -98,7 +120,7 @@ Explorer.prototype.getNodeForArray = function getNodeForArray(arr, depth) {
   return outer
 }
 
-Explorer.prototype.getNodeForObject = function getNodeForObject(obj, depth) {
+Explorer.prototype.getNodeForObject = function getNodeForObject(obj, path) {
   if (Object.keys(obj).length === 0) return document.createTextNode('{}')
   var self = this
 
@@ -106,14 +128,14 @@ Explorer.prototype.getNodeForObject = function getNodeForObject(obj, depth) {
   outer.appendChild(document.createTextNode('{'))
 
   Object.keys(obj).forEach(function (key) {
-    outer.appendChild(self.getNodeForProperty(key, obj[key], '', depth + 1))
+    outer.appendChild(self.getNodeForProperty(key, obj[key], '', path.concat(key)))
   })
 
   outer.appendChild(document.createTextNode('}'))
   return outer
 }
 
-Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, description, depth) {
+Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, description, path) {
   var buf = document.createElement('div')
   buf.setAttribute('class', 'indent')
 
@@ -125,12 +147,12 @@ Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, d
 
   var right = span('property-right', description || '')
 
-  if (this.isInline(value, depth)) {
-    left.appendChild(this.getNode(value, depth))
+  if (this.isInline(value, path)) {
+    left.appendChild(this.getNode(value, path))
     buf.appendChild(left)
     buf.appendChild(right)
   } else {
-    var expand = this.getExpandButton(value, depth)
+    var expand = this.getExpandButton(value, path)
     left.appendChild(expand.node)
     buf.appendChild(left)
     buf.appendChild(right)
@@ -138,7 +160,7 @@ Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, d
     var self = this
     expand.on('expanded', function () {
       if (body === null) {
-        body = self.getNode(value, depth)
+        body = self.getNode(value, path)
         buf.appendChild(body)
       } else {
         body.style.display = 'block'
@@ -147,6 +169,9 @@ Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, d
     expand.on('contracted', function () {
       body.style.display = 'none'
     })
+    if (this.isExpanded(path)) {
+      expand.toggle()
+    }
   }
 
   return buf

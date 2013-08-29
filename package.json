@@ -7,10 +7,10 @@
     "insert-css": "0.0.0"
   },
   "devDependencies": {
-    "mocha": "*"
+    "browserify": "~2.29.0"
   },
   "scripts": {
-    "test": "mocha -R spec"
+    "test": "node demo/server.js"
   },
   "repository": {
     "type": "git",
