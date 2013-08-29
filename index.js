@@ -16,10 +16,10 @@ function Explorer(object) {
 Explorer.prototype.appendTo = function (parent) {
   var container = document.createElement('div')
   container.setAttribute('class', 'object-explorer')
-  container.appendChild(this.getNode(this.object))
+  container.appendChild(this.getNode(this.object, 0))
   return parent.appendChild(container)
 }
-Explorer.prototype.isInline = function isInline(obj) {
+Explorer.prototype.isInline = function isInline(obj, depth) {
   if (typeof obj === 'string' || typeof obj === 'number') {
     return true
   }
@@ -36,7 +36,7 @@ Explorer.prototype.isInline = function isInline(obj) {
 
   return false
 }
-Explorer.prototype.getNode = function getNode(obj) {
+Explorer.prototype.getNode = function getNode(obj, depth) {
   if (typeof obj === 'string' || typeof obj === 'number') {
     return span(typeof obj, util.inspect(obj))
   }
@@ -50,14 +50,14 @@ Explorer.prototype.getNode = function getNode(obj) {
     return span('atom', obj.toString())
   }
   if (Array.isArray(obj)) {
-    return this.getNodeForArray(obj)
+    return this.getNodeForArray(obj, depth)
   }
   if (typeof obj === 'object') {
-    return this.getNodeForObject(obj)
+    return this.getNodeForObject(obj, depth)
   }
 }
 
-Explorer.prototype.getExpandButton = function getExpandable(obj) {
+Explorer.prototype.getExpandButton = function getExpandable(obj, depth) {
   var contractedText = Array.isArray(obj) ? '[+]' : typeof obj === 'object' ? '{+}' : '(+)'
   var expandedText = Array.isArray(obj) ? '[-]' : typeof obj === 'object' ? '{-}' : '(-)'
   var isExpanded = false
@@ -81,11 +81,11 @@ Explorer.prototype.getExpandButton = function getExpandable(obj) {
 }
 Explorer.prototype.getContractedNode = Explorer.prototype.getNode
 
-Explorer.prototype.getNodeForArray = function getNodeForArray(arr) {
+Explorer.prototype.getNodeForArray = function getNodeForArray(arr, depth) {
   if (arr.length === 0) return document.createTextNode('[]')
   var self = this
 
-  arr = arr.map(function (node) { return self.getContractedNode(node, '') })
+  arr = arr.map(function (node) { return self.getContractedNode(node, depth + 1) })
   var outer = document.createElement('div')
   outer.appendChild(document.createTextNode('['))
   arr.forEach(function (node) {
@@ -98,7 +98,7 @@ Explorer.prototype.getNodeForArray = function getNodeForArray(arr) {
   return outer
 }
 
-Explorer.prototype.getNodeForObject = function getNodeForObject(obj) {
+Explorer.prototype.getNodeForObject = function getNodeForObject(obj, depth) {
   if (Object.keys(obj).length === 0) return document.createTextNode('{}')
   var self = this
 
@@ -106,14 +106,14 @@ Explorer.prototype.getNodeForObject = function getNodeForObject(obj) {
   outer.appendChild(document.createTextNode('{'))
 
   Object.keys(obj).forEach(function (key) {
-    outer.appendChild(self.getNodeForProperty(key, obj[key]))
+    outer.appendChild(self.getNodeForProperty(key, obj[key], '', depth + 1))
   })
 
   outer.appendChild(document.createTextNode('}'))
   return outer
 }
 
-Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, description) {
+Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, description, depth) {
   var buf = document.createElement('div')
   buf.setAttribute('class', 'indent')
 
@@ -125,12 +125,12 @@ Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, d
 
   var right = span('property-right', description || '')
 
-  if (this.isInline(value)) {
-    left.appendChild(this.getNode(value))
+  if (this.isInline(value, depth)) {
+    left.appendChild(this.getNode(value, depth))
     buf.appendChild(left)
     buf.appendChild(right)
   } else {
-    var expand = this.getExpandButton(value)
+    var expand = this.getExpandButton(value, depth)
     left.appendChild(expand.node)
     buf.appendChild(left)
     buf.appendChild(right)
@@ -138,7 +138,7 @@ Explorer.prototype.getNodeForProperty = function getNodeForObject(name, value, d
     var self = this
     expand.on('expanded', function () {
       if (body === null) {
-        body = self.getNode(value)
+        body = self.getNode(value, depth)
         buf.appendChild(body)
       } else {
         body.style.display = 'block'
