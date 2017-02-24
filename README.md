@@ -1,5 +1,7 @@
 # object-explorer
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/ForbesLindesay/object-explorer.svg)](https://greenkeeper.io/)
+
 A browser module to create an extensible gui to explore objects
 
 You can see this module in use for many of the demos on http://demos.forbeslindesay.co.uk/
