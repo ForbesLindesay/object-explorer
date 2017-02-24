@@ -4,10 +4,10 @@
   "description": "A browser module to create an extensible gui to explore objects",
   "keywords": [],
   "dependencies": {
-    "insert-css": "0.0.0"
+    "insert-css": "2.0.0"
   },
   "devDependencies": {
-    "browserify": "~2.29.0"
+    "browserify": "~14.1.0"
   },
   "scripts": {
     "test": "node demo/server.js"
