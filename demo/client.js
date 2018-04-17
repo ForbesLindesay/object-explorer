@@ -11,6 +11,9 @@ var obj = {
 }
 obj.self = obj
 obj.arr = [obj, obj, obj]
+obj.longArr = []
+for (i = 0; i < 500; i++) obj.longArr.push(i)
+
 var state = null
 function next() {
   var e = new ObjectExplorer(obj, state)

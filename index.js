@@ -24,9 +24,10 @@ ExpandState.prototype.isExpanded = function (name) {
   return this['key:' + name.join('.')]
 }
 
-function Explorer(object, expandState) {
+function Explorer(object, expandState, arrayPageSize) {
   this.object = object
   this.state = (expandState && expandState.state) || expandState || new ExpandState()
+  this.arrayPageSize = arrayPageSize || 50
 }
 Explorer.prototype.appendTo = function (parent) {
   var container = document.createElement('div')
@@ -107,31 +108,53 @@ Explorer.prototype.getNodeForArray = function getNodeForArray(arr, path) {
   if (arr.length === 0) return document.createTextNode('[]')
   var self = this
 
-  arr = arr.map(function (node, i) { return self.getContractedNode(node, path.concat(i.toString())) })
-  var outer = document.createElement('div')
-  outer.appendChild(document.createTextNode('['))
-  arr.forEach(function (node) {
-    var buf = document.createElement('div')
-    buf.setAttribute('class', 'indent')
-    buf.appendChild(node)
-    outer.appendChild(buf)
-  })
-  outer.appendChild(document.createTextNode(']'))
-  return outer
+  if (arr.length > self.arrayPageSize) {
+    var arrLength = arr.length
+    var pages = Math.ceil(arrLength / self.arrayPageSize)
+    var pagedObject = {}
+    var upperLimit
+    var lowerLimit
+    for (var i = 0; i < pages; i ++) {
+      lowerLimit = i * self.arrayPageSize
+      upperLimit = ((i + 1) * self.arrayPageSize) - 1
+      if (upperLimit > arrLength) {
+        upperLimit = arrLength
+      }
+      pagedObject[lowerLimit + '..' + upperLimit] = arr.slice(lowerLimit, upperLimit + 1)
+    }
+    return self.getNodeForObject(pagedObject, path, { asArray: true })
+  } else {
+    var outer = document.createElement('div')
+    outer.appendChild(document.createTextNode('['))
+    arr = arr.map(function (node, i) { return self.getContractedNode(node, path.concat(i.toString())) })
+    arr.forEach(function (node) {
+      var buf = document.createElement('div')
+      buf.setAttribute('class', 'indent')
+      buf.appendChild(node)
+      outer.appendChild(buf)
+    })
+    outer.appendChild(document.createTextNode(']'))
+    return outer
+  }
 }
 
-Explorer.prototype.getNodeForObject = function getNodeForObject(obj, path) {
-  if (Object.keys(obj).length === 0) return document.createTextNode('{}')
+Explorer.prototype.getNodeForObject = function getNodeForObject(obj, path, options) {
+  options = options || { asArray: false }
+
+  var leftChar = options.asArray ? '[' : '{'
+  var rightChar = options.asArray ? ']' : '}'
+
+  if (Object.keys(obj).length === 0) return document.createTextNode(leftChar + rightChar)
   var self = this
 
   var outer = document.createElement('div')
-  outer.appendChild(document.createTextNode('{'))
+  outer.appendChild(document.createTextNode(leftChar))
 
   Object.keys(obj).forEach(function (key) {
     outer.appendChild(self.getNodeForProperty(key, obj[key], '', path.concat(key)))
   })
 
-  outer.appendChild(document.createTextNode('}'))
+  outer.appendChild(document.createTextNode(rightChar))
   return outer
 }
 
